@@ -1,0 +1,179 @@
+use crate::error::ParserError;
+use crate::parser::Parser;
+use crate::storage::{YPBankRecord, YPBankRecordStatus, YPBankRecordType, YPBankStorage};
+use std::io::{BufRead, BufReader, Read, Write};
+
+const HEADER: &str = "TX_ID,TX_TYPE,FROM_USER_ID,TO_USER_ID,AMOUNT,TIMESTAMP,STATUS,DESCRIPTION";
+
+pub struct CsvParser {
+    pub storage: YPBankStorage,
+}
+
+impl Parser for CsvParser {
+    fn from_read<R: Read>(r: &mut R) -> Result<YPBankStorage, ParserError> {
+        let mut storage = YPBankStorage::new();
+        let mut reader = BufReader::new(r);
+        parse_header(&mut reader)?;
+        loop {
+            let mut line = String::new();
+            let bytes_read = reader.read_line(&mut line).map_err(io_error)?;
+            if bytes_read == 0 {
+                break; // EOF
+            }
+            if line.trim().is_empty() {
+                continue; // skip empty lines
+            }
+            let record = parse_record(&line)?;
+            storage.push(record);
+        }
+        Ok(storage)
+    }
+
+    fn write_to<W: Write>(&mut self, w: &mut W) -> Result<(), ParserError> {
+        w.write_all(HEADER.as_bytes()).map_err(io_error)?;
+        w.write_all(b"\n").map_err(io_error)?;
+        for record in self.storage.records() {
+            w.write_all(serialize_record(record).as_bytes())
+                .map_err(io_error)?;
+            w.write_all(b"\n").map_err(io_error)?;
+        }
+        Ok(())
+    }
+
+    fn from_storage(storage: YPBankStorage) -> Self {
+        Self { storage }
+    }
+}
+
+fn parse_header(r: &mut impl BufRead) -> Result<(), ParserError> {
+    let mut header = String::new();
+    r.read_line(&mut header).map_err(io_error)?;
+    if header.trim() != HEADER {
+        return Err(invalid_record("invalid CSV header"));
+    }
+    Ok(())
+}
+
+fn parse_record(line: &str) -> Result<YPBankRecord, ParserError> {
+    let mut parts = line.splitn(8, ',');
+
+    let tx_id = parts
+        .next()
+        .ok_or_else(|| invalid_record("missing TX_ID"))?
+        .trim()
+        .parse::<u64>()
+        .map_err(|_| invalid_record("invalid TX_ID"))?;
+
+    let tx_type = parse_tx_type(
+        parts
+            .next()
+            .ok_or_else(|| invalid_record("missing TX_TYPE"))?
+            .trim(),
+    )?;
+
+    let from_user_id = parts
+        .next()
+        .ok_or_else(|| invalid_record("missing FROM_USER_ID"))?
+        .trim()
+        .parse::<u64>()
+        .map_err(|_| invalid_record("invalid FROM_USER_ID"))?;
+
+    let to_user_id = parts
+        .next()
+        .ok_or_else(|| invalid_record("missing TO_USER_ID"))?
+        .trim()
+        .parse::<u64>()
+        .map_err(|_| invalid_record("invalid TO_USER_ID"))?;
+
+    let amount = parts
+        .next()
+        .ok_or_else(|| invalid_record("missing AMOUNT"))?
+        .trim()
+        .parse::<u64>()
+        .map_err(|_| invalid_record("invalid AMOUNT"))?;
+
+    let timestamp = parts
+        .next()
+        .ok_or_else(|| invalid_record("missing TIMESTAMP"))?
+        .trim()
+        .parse::<u64>()
+        .map_err(|_| invalid_record("invalid TIMESTAMP"))?;
+
+    let status = parse_status(
+        parts
+            .next()
+            .ok_or_else(|| invalid_record("missing STATUS"))?
+            .trim(),
+    )?;
+
+    let description_raw = parts
+        .next()
+        .ok_or_else(|| invalid_record("missing DESCRIPTION"))?
+        .trim();
+    let description = parse_description(description_raw)?;
+
+    Ok(YPBankRecord {
+        tx_id,
+        tx_type,
+        from_user_id,
+        to_user_id,
+        amount,
+        timestamp,
+        status,
+        description,
+    })
+}
+
+fn parse_tx_type(s: &str) -> Result<YPBankRecordType, ParserError> {
+    match s {
+        "DEPOSIT" => Ok(YPBankRecordType::Deposit),
+        "TRANSFER" => Ok(YPBankRecordType::Transfer),
+        "WITHDRAWAL" => Ok(YPBankRecordType::Withdrawal),
+        _ => Err(invalid_record("invalid TX_TYPE")),
+    }
+}
+
+fn parse_status(s: &str) -> Result<YPBankRecordStatus, ParserError> {
+    match s {
+        "SUCCESS" => Ok(YPBankRecordStatus::Success),
+        "FAILURE" => Ok(YPBankRecordStatus::Failure),
+        "PENDING" => Ok(YPBankRecordStatus::Pending),
+        _ => Err(invalid_record("invalid STATUS")),
+    }
+}
+
+fn parse_description(s: &str) -> Result<String, ParserError> {
+    if s.len() >= 2 && s.starts_with('"') && s.ends_with('"') {
+        Ok(s[1..s.len() - 1].to_string())
+    } else {
+        Err(invalid_record(
+            "DESCRIPTION must be enclosed in double quotes",
+        ))
+    }
+}
+
+fn serialize_record(record: &YPBankRecord) -> String {
+    format!(
+        "{},{},{},{},{},{},{},\"{}\"",
+        record.tx_id,
+        record.tx_type,
+        record.from_user_id,
+        record.to_user_id,
+        record.amount,
+        record.timestamp,
+        record.status,
+        record.description
+    )
+}
+
+fn invalid_record(msg: &str) -> ParserError {
+    ParserError::InvalidRecord {
+        message: msg.to_string(),
+    }
+}
+
+fn io_error(e: std::io::Error) -> ParserError {
+    ParserError::IO {
+        message: e.to_string(),
+    }
+}
