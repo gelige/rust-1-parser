@@ -177,3 +177,54 @@ fn io_error(e: std::io::Error) -> ParserError {
         message: e.to_string(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Cursor;
+
+    fn sample_record() -> YPBankRecord {
+        YPBankRecord {
+            tx_id: 43,
+            tx_type: YPBankRecordType::Transfer,
+            from_user_id: 1,
+            to_user_id: 2,
+            amount: 500,
+            timestamp: 1700000000,
+            status: YPBankRecordStatus::Success,
+            description: "test transfer".to_string(),
+        }
+    }
+
+    #[test]
+    fn test_write_then_read() {
+        let record = sample_record();
+        let mut storage = YPBankStorage::new();
+        storage.push(record.clone());
+
+        let mut buf = Vec::new();
+        let mut parser = CsvParser::from_storage(storage);
+        parser.write_to(&mut buf).expect("write failed");
+
+        let mut cursor = Cursor::new(buf);
+        let parsed = CsvParser::from_read(&mut cursor).expect("read failed");
+
+        assert_eq!(parsed.records().len(), 1);
+        assert_eq!(parsed.records()[0], record);
+    }
+
+    #[test]
+    fn test_read_from_csv() {
+        let record = sample_record();
+        let text = concat!(
+            "TX_ID,TX_TYPE,FROM_USER_ID,TO_USER_ID,AMOUNT,TIMESTAMP,STATUS,DESCRIPTION\n",
+            "43,TRANSFER,1,2,500,1700000000,SUCCESS,\"test transfer\"\n",
+        );
+
+        let mut cursor = Cursor::new(text);
+        let parsed = CsvParser::from_read(&mut cursor).expect("read failed");
+
+        assert_eq!(parsed.records().len(), 1);
+        assert_eq!(parsed.records()[0], record);
+    }
+}

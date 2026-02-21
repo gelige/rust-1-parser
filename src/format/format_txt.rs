@@ -165,3 +165,60 @@ fn io_error(e: std::io::Error) -> ParserError {
         message: e.to_string(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Cursor;
+
+    fn sample_record() -> YPBankRecord {
+        YPBankRecord {
+            tx_id: 44,
+            tx_type: YPBankRecordType::Withdrawal,
+            from_user_id: 1,
+            to_user_id: 2,
+            amount: 500,
+            timestamp: 1700000000,
+            status: YPBankRecordStatus::Failure,
+            description: "test withdrawal".to_string(),
+        }
+    }
+
+    #[test]
+    fn test_write_then_read() {
+        let record = sample_record();
+        let mut storage = YPBankStorage::new();
+        storage.push(record.clone());
+
+        let mut buf = Vec::new();
+        let mut parser = TxtParser::from_storage(storage);
+        parser.write_to(&mut buf).expect("write failed");
+
+        let mut cursor = Cursor::new(buf);
+        let parsed = TxtParser::from_read(&mut cursor).expect("read failed");
+
+        assert_eq!(parsed.records().len(), 1);
+        assert_eq!(parsed.records()[0], record);
+    }
+
+    #[test]
+    fn test_read_from_text() {
+        let record = sample_record();
+        let text = concat!(
+            "TX_ID: 44\n",
+            "TX_TYPE: WITHDRAWAL\n",
+            "FROM_USER_ID: 1\n",
+            "TO_USER_ID: 2\n",
+            "AMOUNT: 500\n",
+            "TIMESTAMP: 1700000000\n",
+            "STATUS: FAILURE\n",
+            "DESCRIPTION: \"test withdrawal\"\n",
+        );
+
+        let mut cursor = Cursor::new(text);
+        let parsed = TxtParser::from_read(&mut cursor).expect("read failed");
+
+        assert_eq!(parsed.records().len(), 1);
+        assert_eq!(parsed.records()[0], record);
+    }
+}

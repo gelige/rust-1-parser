@@ -163,3 +163,57 @@ fn io_error(e: std::io::Error) -> ParserError {
         message: e.to_string(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::storage::{YPBankRecord, YPBankRecordStatus, YPBankRecordType};
+
+    fn sample_record() -> YPBankRecord {
+        YPBankRecord {
+            tx_id: 42,
+            tx_type: YPBankRecordType::Deposit,
+            from_user_id: 1,
+            to_user_id: 2,
+            amount: 1000,
+            timestamp: 1700000001,
+            status: YPBankRecordStatus::Pending,
+            description: "test deposit".to_string(),
+        }
+    }
+
+    #[test]
+    fn test_write_then_read() {
+        let record = sample_record();
+        let mut storage = YPBankStorage::new();
+        storage.push(record.clone());
+
+        let mut buf = Vec::new();
+        let mut parser = BinParser::from_storage(storage);
+        parser.write_to(&mut buf).expect("write failed");
+
+        let mut cursor = std::io::Cursor::new(buf);
+        let parsed = BinParser::from_read(&mut cursor).expect("read failed");
+
+        assert_eq!(parsed.records().len(), 1);
+        assert_eq!(parsed.records()[0], record);
+    }
+
+    #[test]
+    fn test_read_from_binary() {
+        let record = sample_record();
+
+        // Manually build the binary representation
+        let body = serialize_record(&record);
+        let mut data = Vec::new();
+        data.extend_from_slice(&MAGIC);
+        data.extend_from_slice(&(body.len() as u32).to_be_bytes());
+        data.extend_from_slice(&body);
+
+        let mut cursor = std::io::Cursor::new(data);
+        let parsed = BinParser::from_read(&mut cursor).expect("read failed");
+
+        assert_eq!(parsed.records().len(), 1);
+        assert_eq!(parsed.records()[0], record);
+    }
+}
