@@ -1,14 +1,9 @@
 use std::fmt::Display;
 use std::fmt::Formatter;
 
+/// Storage for YPBank records
 pub struct YPBankStorage {
     records: Vec<YPBankRecord>,
-}
-
-impl YPBankStorage {
-    pub fn get(&self, p0: i32) -> Option<&YPBankRecord> {
-        self.records.get(p0 as usize)
-    }
 }
 
 impl YPBankStorage {
@@ -18,16 +13,24 @@ impl YPBankStorage {
         }
     }
 
-    pub fn push(&mut self, record: YPBankRecord) {
-        self.records.push(record);
-    }
-
+    /// Get all records
     pub fn records(&self) -> &[YPBankRecord] {
         &self.records
     }
+
+    /// Get a record by index
+    pub fn get(&self, index: usize) -> Option<&YPBankRecord> {
+        self.records.get(index)
+    }
+
+    /// Push a new record to the storage
+    pub fn push(&mut self, record: YPBankRecord) {
+        self.records.push(record);
+    }
 }
 
-#[derive(Debug, PartialEq)]
+/// A record in the YPBank storage
+#[derive(Debug, PartialEq, Clone)]
 pub struct YPBankRecord {
     pub tx_id: u64,
     pub tx_type: YPBankRecordType,
@@ -41,7 +44,7 @@ pub struct YPBankRecord {
 
 pub type Description = String;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum YPBankRecordType {
     Deposit,
     Transfer,
@@ -63,7 +66,7 @@ impl Display for YPBankRecordType {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum YPBankRecordStatus {
     Success,
     Failure,
@@ -82,5 +85,54 @@ impl Display for YPBankRecordStatus {
             }
         )?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_new_storage_is_empty() {
+        let storage = YPBankStorage::new();
+        assert!(storage.records().is_empty());
+    }
+
+    #[test]
+    fn test_push_record() {
+        let mut storage = YPBankStorage::new();
+        let record = YPBankRecord {
+            tx_id: 1,
+            tx_type: YPBankRecordType::Deposit,
+            from_user_id: 1,
+            to_user_id: 2,
+            amount: 100,
+            timestamp: 1638224000,
+            status: YPBankRecordStatus::Success,
+            description: "Some deposit".to_string(),
+        };
+        let expected = record.clone();
+        storage.push(record);
+        assert_eq!(storage.records().len(), 1);
+        assert_eq!(storage.records(), &[expected]);
+    }
+
+    #[test]
+    fn test_get_record() {
+        let mut storage = YPBankStorage::new();
+        let record = YPBankRecord {
+            tx_id: 2,
+            tx_type: YPBankRecordType::Transfer,
+            from_user_id: 2,
+            to_user_id: 3,
+            amount: 120,
+            timestamp: 1638224111,
+            status: YPBankRecordStatus::Pending,
+            description: "Some pending transfer".to_string(),
+        };
+        let expected = record.clone();
+        storage.push(record);
+        assert_eq!(storage.get(0), Some(&expected));
+        assert_eq!(storage.get(1), None);
     }
 }
