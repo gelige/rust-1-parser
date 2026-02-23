@@ -1,3 +1,5 @@
+//! Plain-text key-value format parser for YPBank records.
+
 use crate::error::ParserError;
 use crate::parser::Parser;
 use crate::storage::{YPBankRecord, YPBankRecordStatus, YPBankRecordType, YPBankStorage};
@@ -5,7 +7,9 @@ use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::str::FromStr;
 
+/// Parser for the plain-text key-value record format.
 pub struct TxtParser {
+    /// In-memory storage populated after parsing.
     pub storage: YPBankStorage,
 }
 

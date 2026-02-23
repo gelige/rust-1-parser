@@ -1,3 +1,5 @@
+//! Binary format parser for YPBank records.
+
 use crate::error::ParserError;
 use crate::parser::Parser;
 use crate::storage::{YPBankRecord, YPBankRecordStatus, YPBankRecordType, YPBankStorage};
@@ -5,7 +7,9 @@ use std::io::{Cursor, Read, Write};
 
 const MAGIC: [u8; 4] = [0x59, 0x50, 0x42, 0x4E]; // 'YPBN'
 
+/// Parser for the custom binary (`YPBN`) record format.
 pub struct BinParser {
+    /// In-memory storage populated after parsing.
     pub storage: YPBankStorage,
 }
 

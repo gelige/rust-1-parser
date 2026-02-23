@@ -1,3 +1,5 @@
+//! CSV format parser for YPBank records.
+
 use crate::error::ParserError;
 use crate::parser::Parser;
 use crate::storage::{YPBankRecord, YPBankRecordStatus, YPBankRecordType, YPBankStorage};
@@ -6,7 +8,9 @@ use std::str::FromStr;
 
 const HEADER: &str = "TX_ID,TX_TYPE,FROM_USER_ID,TO_USER_ID,AMOUNT,TIMESTAMP,STATUS,DESCRIPTION";
 
+/// Parser for the CSV record format.
 pub struct CsvParser {
+    /// In-memory storage populated after parsing.
     pub storage: YPBankStorage,
 }
 

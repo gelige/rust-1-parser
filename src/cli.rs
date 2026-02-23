@@ -1,3 +1,5 @@
+//! Command-line argument parsing utilities
+
 use crate::error::CliError;
 
 /// A trait for working with CLI arguments

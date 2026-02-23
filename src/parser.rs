@@ -1,3 +1,5 @@
+//! Core parser trait definition.
+
 use crate::error::ParserError;
 use crate::storage::YPBankStorage;
 

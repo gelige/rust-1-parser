@@ -1,3 +1,5 @@
+//! In-memory storage and data types for YPBank transaction records
+
 use strum_macros::Display;
 use strum_macros::EnumString;
 
@@ -7,6 +9,7 @@ pub struct YPBankStorage {
 }
 
 impl YPBankStorage {
+    /// Creates a new empty storage
     pub fn new() -> Self {
         Self {
             records: Vec::new(),
@@ -32,29 +35,46 @@ impl YPBankStorage {
 /// A record in the YPBank storage
 #[derive(Debug, PartialEq, Clone)]
 pub struct YPBankRecord {
+    /// Unique transaction identifier
     pub tx_id: u64,
+    /// Type of the transaction
     pub tx_type: YPBankRecordType,
+    /// ID of the user sending the funds
     pub from_user_id: u64,
+    /// ID of the user receiving the funds
     pub to_user_id: u64,
+    /// Transaction amount in the smallest currency unit
     pub amount: u64,
+    /// Unix timestamp of the transaction
     pub timestamp: u64,
+    /// Current status of the transaction
     pub status: YPBankRecordStatus,
+    /// Free-text description of the transaction
     pub description: Description,
 }
 
+/// A description attached to a transaction record
 pub type Description = String;
 
+/// Possible transaction types for a bank record
 #[derive(Debug, PartialEq, Clone, Display, EnumString)]
 pub enum YPBankRecordType {
+    /// Funds added to an account
     DEPOSIT,
+    /// Funds moved between two accounts
     TRANSFER,
+    /// Funds removed from an account
     WITHDRAWAL,
 }
 
+/// Possible processing statuses for a bank record
 #[derive(Debug, PartialEq, Clone, Display, EnumString)]
 pub enum YPBankRecordStatus {
+    /// Transaction completed successfully
     SUCCESS,
+    /// Transaction failed
     FAILURE,
+    /// Transaction is still being processed
     PENDING,
 }
 
