@@ -89,6 +89,7 @@ fn compare_files(config: Config) -> Result<(), CliError> {
 fn read_file_format(file: &str, format: &str) -> Result<YPBankStorage, CliError> {
     let file = File::open(file).map_err(|e| CliError::IO {
         message: e.to_string(),
+        error: e,
     })?;
     let storage = match format {
         "bin" => BinParser::from_read(&mut BufReader::new(file))?,

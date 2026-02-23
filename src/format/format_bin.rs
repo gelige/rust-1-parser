@@ -161,6 +161,7 @@ fn invalid_record(msg: &str) -> ParserError {
 fn io_error(e: std::io::Error) -> ParserError {
     ParserError::IO {
         message: e.to_string(),
+        error: e,
     }
 }
 

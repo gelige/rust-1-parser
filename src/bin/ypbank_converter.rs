@@ -67,6 +67,7 @@ fn convert(config: Config) -> Result<(), CliError> {
     // Read from file
     let file = File::open(&config.input).map_err(|e| CliError::IO {
         message: e.to_string(),
+        error: e,
     })?;
     let storage = match config.input_format.as_str() {
         "bin" => BinParser::from_read(&mut BufReader::new(file))?,
@@ -86,6 +87,7 @@ fn convert(config: Config) -> Result<(), CliError> {
     } else {
         let file = File::create(&config.output).map_err(|e| CliError::IO {
             message: e.to_string(),
+            error: e,
         })?;
         Box::new(BufWriter::new(file))
     };
