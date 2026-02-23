@@ -4,6 +4,7 @@ use strum_macros::Display;
 use strum_macros::EnumString;
 
 /// Storage for YPBank records
+#[derive(Debug)]
 pub struct YPBankStorage {
     records: Vec<YPBankRecord>,
 }

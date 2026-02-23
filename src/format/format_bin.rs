@@ -223,4 +223,37 @@ mod tests {
         assert_eq!(parsed.records().len(), 1);
         assert_eq!(parsed.records()[0], record);
     }
+
+    #[test]
+    fn test_invalid_magic() {
+        let body = serialize_record(&sample_record());
+        let mut data = Vec::new();
+        data.extend_from_slice(&[0xDE, 0xAD, 0xBE, 0xEF]);
+        data.extend_from_slice(&(body.len() as u32).to_be_bytes());
+        data.extend_from_slice(&body);
+
+        let mut cursor = Cursor::new(data);
+        let result = BinParser::from_read(&mut cursor);
+        assert!(
+            matches!(result, Err(ParserError::InvalidRecord { .. })),
+            "expected InvalidRecord for bad magic, got: {:?}",
+            result
+        );
+    }
+
+    #[test]
+    fn test_truncated_body() {
+        let mut data = Vec::new();
+        data.extend_from_slice(&MAGIC);
+        data.extend_from_slice(&100u32.to_be_bytes()); // 100 bytes
+        data.extend_from_slice(&[0u8; 10]); // only 10 bytes present
+
+        let mut cursor = Cursor::new(data);
+        let result = BinParser::from_read(&mut cursor);
+        assert!(
+            matches!(result, Err(ParserError::InvalidRecord { .. })),
+            "expected InvalidRecord for truncated body, got: {:?}",
+            result
+        );
+    }
 }

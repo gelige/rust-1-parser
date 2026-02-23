@@ -223,4 +223,31 @@ mod tests {
         assert_eq!(parsed.records().len(), 1);
         assert_eq!(parsed.records()[0], record);
     }
+
+    #[test]
+    fn test_invalid_header() {
+        let text = "TX_ID,TX_TYPE,FROM_USER_ID,TO_USER_ID,AMOUNT,TIMESTAMP,STATUS\n";
+        let mut cursor = Cursor::new(text);
+        let result = CsvParser::from_read(&mut cursor);
+        assert!(
+            matches!(result, Err(ParserError::InvalidRecord { .. })),
+            "expected InvalidRecord for wrong header, got: {:?}",
+            result
+        );
+    }
+
+    #[test]
+    fn test_missing_description_field() {
+        let text = concat!(
+            "TX_ID,TX_TYPE,FROM_USER_ID,TO_USER_ID,AMOUNT,TIMESTAMP,STATUS,DESCRIPTION\n",
+            "43,TRANSFER,1,2,500,1700000000,SUCCESS\n",
+        );
+        let mut cursor = Cursor::new(text);
+        let result = CsvParser::from_read(&mut cursor);
+        assert!(
+            matches!(result, Err(ParserError::InvalidRecord { .. })),
+            "expected InvalidRecord for missing DESCRIPTION, got: {:?}",
+            result
+        );
+    }
 }

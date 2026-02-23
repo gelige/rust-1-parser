@@ -217,4 +217,46 @@ mod tests {
         assert_eq!(parsed.records().len(), 1);
         assert_eq!(parsed.records()[0], record);
     }
+
+    #[test]
+    fn test_missing_required_field() {
+        // AMOUNT is intentionally omitted
+        let text = concat!(
+            "TX_ID: 44\n",
+            "TX_TYPE: WITHDRAWAL\n",
+            "FROM_USER_ID: 1\n",
+            "TO_USER_ID: 2\n",
+            "TIMESTAMP: 1700000000\n",
+            "STATUS: FAILURE\n",
+            "DESCRIPTION: \"test withdrawal\"\n",
+        );
+        let mut cursor = Cursor::new(text);
+        let result = TxtParser::from_read(&mut cursor);
+        assert!(
+            matches!(result, Err(ParserError::InvalidRecord { .. })),
+            "expected InvalidRecord for missing AMOUNT, got: {:?}",
+            result
+        );
+    }
+
+    #[test]
+    fn test_invalid_tx_type() {
+        let text = concat!(
+            "TX_ID: 44\n",
+            "TX_TYPE: INVALID_TYPE\n",
+            "FROM_USER_ID: 1\n",
+            "TO_USER_ID: 2\n",
+            "AMOUNT: 500\n",
+            "TIMESTAMP: 1700000000\n",
+            "STATUS: FAILURE\n",
+            "DESCRIPTION: \"test withdrawal\"\n",
+        );
+        let mut cursor = Cursor::new(text);
+        let result = TxtParser::from_read(&mut cursor);
+        assert!(
+            matches!(result, Err(ParserError::InvalidRecord { .. })),
+            "expected InvalidRecord for invalid TX_TYPE, got: {:?}",
+            result
+        );
+    }
 }
