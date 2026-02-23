@@ -3,6 +3,7 @@ use crate::parser::Parser;
 use crate::storage::{YPBankRecord, YPBankRecordStatus, YPBankRecordType, YPBankStorage};
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Read, Write};
+use std::str::FromStr;
 
 pub struct TxtParser {
     pub storage: YPBankStorage,
@@ -113,21 +114,11 @@ fn take_field(fields: &mut HashMap<String, String>, key: &str) -> Result<String,
 }
 
 fn parse_tx_type(s: &str) -> Result<YPBankRecordType, ParserError> {
-    match s {
-        "DEPOSIT" => Ok(YPBankRecordType::Deposit),
-        "TRANSFER" => Ok(YPBankRecordType::Transfer),
-        "WITHDRAWAL" => Ok(YPBankRecordType::Withdrawal),
-        _ => Err(invalid_record("invalid TX_TYPE")),
-    }
+    YPBankRecordType::from_str(s).map_err(|_| invalid_record("invalid TX_TYPE"))
 }
 
 fn parse_status(s: &str) -> Result<YPBankRecordStatus, ParserError> {
-    match s {
-        "SUCCESS" => Ok(YPBankRecordStatus::Success),
-        "FAILURE" => Ok(YPBankRecordStatus::Failure),
-        "PENDING" => Ok(YPBankRecordStatus::Pending),
-        _ => Err(invalid_record("invalid STATUS")),
-    }
+    YPBankRecordStatus::from_str(s).map_err(|_| invalid_record("invalid STATUS"))
 }
 
 fn parse_description(s: &str) -> Result<String, ParserError> {
@@ -174,12 +165,12 @@ mod tests {
     fn sample_record() -> YPBankRecord {
         YPBankRecord {
             tx_id: 44,
-            tx_type: YPBankRecordType::Withdrawal,
+            tx_type: YPBankRecordType::WITHDRAWAL,
             from_user_id: 1,
             to_user_id: 2,
             amount: 500,
             timestamp: 1700000000,
-            status: YPBankRecordStatus::Failure,
+            status: YPBankRecordStatus::FAILURE,
             description: "test withdrawal".to_string(),
         }
     }

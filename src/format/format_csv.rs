@@ -2,6 +2,7 @@ use crate::error::ParserError;
 use crate::parser::Parser;
 use crate::storage::{YPBankRecord, YPBankRecordStatus, YPBankRecordType, YPBankStorage};
 use std::io::{BufRead, BufReader, Read, Write};
+use std::str::FromStr;
 
 const HEADER: &str = "TX_ID,TX_TYPE,FROM_USER_ID,TO_USER_ID,AMOUNT,TIMESTAMP,STATUS,DESCRIPTION";
 
@@ -125,21 +126,11 @@ fn parse_record(line: &str) -> Result<YPBankRecord, ParserError> {
 }
 
 fn parse_tx_type(s: &str) -> Result<YPBankRecordType, ParserError> {
-    match s {
-        "DEPOSIT" => Ok(YPBankRecordType::Deposit),
-        "TRANSFER" => Ok(YPBankRecordType::Transfer),
-        "WITHDRAWAL" => Ok(YPBankRecordType::Withdrawal),
-        _ => Err(invalid_record("invalid TX_TYPE")),
-    }
+    YPBankRecordType::from_str(s).map_err(|_| invalid_record("invalid TX_TYPE"))
 }
 
 fn parse_status(s: &str) -> Result<YPBankRecordStatus, ParserError> {
-    match s {
-        "SUCCESS" => Ok(YPBankRecordStatus::Success),
-        "FAILURE" => Ok(YPBankRecordStatus::Failure),
-        "PENDING" => Ok(YPBankRecordStatus::Pending),
-        _ => Err(invalid_record("invalid STATUS")),
-    }
+    YPBankRecordStatus::from_str(s).map_err(|_| invalid_record("invalid STATUS"))
 }
 
 fn parse_description(s: &str) -> Result<String, ParserError> {
@@ -186,12 +177,12 @@ mod tests {
     fn sample_record() -> YPBankRecord {
         YPBankRecord {
             tx_id: 43,
-            tx_type: YPBankRecordType::Transfer,
+            tx_type: YPBankRecordType::TRANSFER,
             from_user_id: 1,
             to_user_id: 2,
             amount: 500,
             timestamp: 1700000000,
-            status: YPBankRecordStatus::Success,
+            status: YPBankRecordStatus::SUCCESS,
             description: "test transfer".to_string(),
         }
     }

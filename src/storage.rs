@@ -1,5 +1,5 @@
-use std::fmt::Display;
-use std::fmt::Formatter;
+use strum_macros::Display;
+use strum_macros::EnumString;
 
 /// Storage for YPBank records
 pub struct YPBankStorage {
@@ -44,48 +44,18 @@ pub struct YPBankRecord {
 
 pub type Description = String;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Display, EnumString)]
 pub enum YPBankRecordType {
-    Deposit,
-    Transfer,
-    Withdrawal,
+    DEPOSIT,
+    TRANSFER,
+    WITHDRAWAL,
 }
 
-impl Display for YPBankRecordType {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(
-            f,
-            "{}",
-            match self {
-                YPBankRecordType::Deposit => "DEPOSIT",
-                YPBankRecordType::Transfer => "TRANSFER",
-                YPBankRecordType::Withdrawal => "WITHDRAWAL",
-            }
-        )?;
-        Ok(())
-    }
-}
-
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Display, EnumString)]
 pub enum YPBankRecordStatus {
-    Success,
-    Failure,
-    Pending,
-}
-
-impl Display for YPBankRecordStatus {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(
-            f,
-            "{}",
-            match self {
-                YPBankRecordStatus::Success => "SUCCESS",
-                YPBankRecordStatus::Failure => "FAILURE",
-                YPBankRecordStatus::Pending => "PENDING",
-            }
-        )?;
-        Ok(())
-    }
+    SUCCESS,
+    FAILURE,
+    PENDING,
 }
 
 #[cfg(test)]
@@ -103,12 +73,12 @@ mod tests {
         let mut storage = YPBankStorage::new();
         let record = YPBankRecord {
             tx_id: 1,
-            tx_type: YPBankRecordType::Deposit,
+            tx_type: YPBankRecordType::DEPOSIT,
             from_user_id: 1,
             to_user_id: 2,
             amount: 100,
             timestamp: 1638224000,
-            status: YPBankRecordStatus::Success,
+            status: YPBankRecordStatus::SUCCESS,
             description: "Some deposit".to_string(),
         };
         let expected = record.clone();
@@ -122,12 +92,12 @@ mod tests {
         let mut storage = YPBankStorage::new();
         let record = YPBankRecord {
             tx_id: 2,
-            tx_type: YPBankRecordType::Transfer,
+            tx_type: YPBankRecordType::TRANSFER,
             from_user_id: 2,
             to_user_id: 3,
             amount: 120,
             timestamp: 1638224111,
-            status: YPBankRecordStatus::Pending,
+            status: YPBankRecordStatus::PENDING,
             description: "Some pending transfer".to_string(),
         };
         let expected = record.clone();

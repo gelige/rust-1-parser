@@ -85,22 +85,22 @@ fn serialize_record(record: &YPBankRecord) -> Vec<u8> {
     let mut out = Vec::with_capacity(46 + desc.len());
     out.extend_from_slice(&record.tx_id.to_be_bytes());
     out.push(match record.tx_type {
-        YPBankRecordType::Deposit => 0,
-        YPBankRecordType::Transfer => 1,
-        YPBankRecordType::Withdrawal => 2,
+        YPBankRecordType::DEPOSIT => 0,
+        YPBankRecordType::TRANSFER => 1,
+        YPBankRecordType::WITHDRAWAL => 2,
     });
     out.extend_from_slice(&record.from_user_id.to_be_bytes());
     out.extend_from_slice(&record.to_user_id.to_be_bytes());
     let amount_i64: i64 = match record.tx_type {
-        YPBankRecordType::Withdrawal => -(record.amount as i64),
+        YPBankRecordType::WITHDRAWAL => -(record.amount as i64),
         _ => record.amount as i64,
     };
     out.extend_from_slice(&amount_i64.to_be_bytes());
     out.extend_from_slice(&record.timestamp.to_be_bytes());
     out.push(match record.status {
-        YPBankRecordStatus::Success => 0,
-        YPBankRecordStatus::Failure => 1,
-        YPBankRecordStatus::Pending => 2,
+        YPBankRecordStatus::SUCCESS => 0,
+        YPBankRecordStatus::FAILURE => 1,
+        YPBankRecordStatus::PENDING => 2,
     });
     out.extend_from_slice(&(desc.len() as u32).to_be_bytes());
     out.extend_from_slice(desc);
@@ -133,9 +133,9 @@ fn read_tx_type(r: &mut impl Read) -> Result<YPBankRecordType, ParserError> {
     r.read_exact(&mut b)
         .map_err(|_| invalid_record("truncated TX_TYPE"))?;
     match b[0] {
-        0 => Ok(YPBankRecordType::Deposit),
-        1 => Ok(YPBankRecordType::Transfer),
-        2 => Ok(YPBankRecordType::Withdrawal),
+        0 => Ok(YPBankRecordType::DEPOSIT),
+        1 => Ok(YPBankRecordType::TRANSFER),
+        2 => Ok(YPBankRecordType::WITHDRAWAL),
         _ => Err(invalid_record("invalid TX_TYPE")),
     }
 }
@@ -145,9 +145,9 @@ fn read_status(r: &mut impl Read) -> Result<YPBankRecordStatus, ParserError> {
     r.read_exact(&mut b)
         .map_err(|_| invalid_record("truncated STATUS"))?;
     match b[0] {
-        0 => Ok(YPBankRecordStatus::Success),
-        1 => Ok(YPBankRecordStatus::Failure),
-        2 => Ok(YPBankRecordStatus::Pending),
+        0 => Ok(YPBankRecordStatus::SUCCESS),
+        1 => Ok(YPBankRecordStatus::FAILURE),
+        2 => Ok(YPBankRecordStatus::PENDING),
         _ => Err(invalid_record("invalid STATUS")),
     }
 }
@@ -172,12 +172,12 @@ mod tests {
     fn sample_record() -> YPBankRecord {
         YPBankRecord {
             tx_id: 42,
-            tx_type: YPBankRecordType::Deposit,
+            tx_type: YPBankRecordType::DEPOSIT,
             from_user_id: 1,
             to_user_id: 2,
             amount: 1000,
             timestamp: 1700000001,
-            status: YPBankRecordStatus::Pending,
+            status: YPBankRecordStatus::PENDING,
             description: "test deposit".to_string(),
         }
     }
