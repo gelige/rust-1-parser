@@ -3,7 +3,7 @@
 use crate::error::ParserError;
 use crate::parser::Parser;
 use crate::storage::{YPBankRecord, YPBankRecordStatus, YPBankRecordType, YPBankStorage};
-use std::io::{Cursor, Read, Write};
+use std::io::{Cursor, ErrorKind, Read, Write};
 
 const MAGIC: [u8; 4] = [0x59, 0x50, 0x42, 0x4E]; // 'YPBN'
 
@@ -19,8 +19,10 @@ impl Parser for BinParser {
         loop {
             // Read record header
             let mut magic = [0u8; 4];
-            if r.read_exact(&mut magic).is_err() {
-                break; // EOF
+            match r.read_exact(&mut magic) {
+                Ok(()) => {}
+                Err(e) if e.kind() == ErrorKind::UnexpectedEof => break,
+                Err(e) => return Err(io_error(e)),
             }
             if magic != MAGIC {
                 return Err(invalid_record("invalid record header"));
